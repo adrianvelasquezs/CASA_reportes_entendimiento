@@ -28,7 +28,7 @@ DATA_FOLDER = '../data/'  # Folder where the input files are located
 BASE_FILE = 'base.xlsx'  # Name of the base file
 ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
 CONSOLIDATED_DIR = 'procesada/'
-CONSOLIDATED_FILE = 'consolidado.xlsx'  # Path for the output consolidated file
+CONSOLIDATED_FILE = 'base_consolidada.xlsx'  # Path for the output consolidated file
 
 
 # ================================================ MAIN FUNCTION ======================================================
@@ -43,7 +43,7 @@ def generate_consolidated_file() -> bool:
         base_df, admitidos_df = load_files()
         # Create processed folder if it doesn't exist
         create_processed_folder()
-        # Merge DataFrames on the student ID column (assuming it's named 'student_id')
+        # Merge DataFrames on the student ID column
         consolidated_df = merge_dataframes(base_df, admitidos_df)
         # Clean the consolidated DataFrame
         consolidated_df = clean_data(consolidated_df)

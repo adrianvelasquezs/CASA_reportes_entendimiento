@@ -62,7 +62,7 @@ class Logger:
         fmt = '%(asctime)s - %(levelname)s - %(message)s'
 
         root = logging.getLogger()
-        root.setLevel(logging.DEBUG)
+        root.setLevel(logging.INFO)
 
         # Remove existing handlers to avoid duplicate logs
         if root.handlers:
@@ -71,7 +71,7 @@ class Logger:
 
         # Stream handler (colored)
         stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.INFO)
         stream_handler.setFormatter(ColoredFormatter(fmt))
 
         root.addHandler(stream_handler)
@@ -79,25 +79,6 @@ class Logger:
         self._root = root
         self._fmt = fmt
         self._file_handler = None
-
-    def _ensure_file_handler(self):
-        """
-        Create logs folder and file handler if not already created.
-        Called lazily when an error is logged.
-        """
-        if self._file_handler is not None:
-            return
-
-        os.makedirs(LOGS_FOLDER, exist_ok=True)
-        log_file = f'log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
-        log_path = os.path.join(LOGS_FOLDER, log_file)
-
-        file_handler = logging.FileHandler(log_path, encoding='utf-8')
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(logging.Formatter(self._fmt))
-
-        self._root.addHandler(file_handler)
-        self._file_handler = file_handler
 
     def info(self, message: str):
         """
@@ -121,11 +102,6 @@ class Logger:
         :param message: The error message to log.
         :return: None
         """
-        try:
-            self._ensure_file_handler()
-        except Exception as e:
-            # If file handler creation fails, still log the error to console
-            logging.error(f"Failed to create log file: {e}")
         logging.error(message)
 
     def delete_logs(self):
