@@ -3,9 +3,10 @@
 # @author: Adrian Esteban Velasquez Solano
 # @date: 10-2025
 #
-# In collaboration with CASA
-# Universidad de los Andes, Bogotá D.C.
-# Colombia
+# In collaboration with CASA - Centro de Aseguramiento del Aprendizaje
+# Universidad de los Andes
+# Facultad de Administración
+# Bogotá D.C., Colombia
 #
 # Description: This script merges multiple MS Excel files into a single consolidated file.
 # There are two files: `base.xlsx` and `admitidos.xlsx` located in the `data` folder.
@@ -17,13 +18,18 @@
 
 import pandas as pd
 import os
+import logger
+
+log = logger.Logger()
 
 # ================================================ CONSTANTS ==========================================================
 
-DATA_FOLDER = '../data'
-BASE_FILE = 'base.xlsx'
-ADMITIDOS_FILE = 'admitidos.xlsx'
-CONSOLIDATED_FILE = 'procesada/consolidated.xlsx'
+DATA_FOLDER = '../data/'  # Folder where the input files are located
+BASE_FILE = 'base.xlsx'  # Name of the base file
+ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
+CONSOLIDATED_DIR = 'procesada/'
+CONSOLIDATED_FILE = 'consolidado.xlsx'  # Path for the output consolidated file
+
 
 # ================================================ MAIN FUNCTION ======================================================
 
@@ -35,17 +41,20 @@ def generate_consolidated_file() -> bool:
     try:
         # Load files
         base_df, admitidos_df = load_files()
+        # Create processed folder if it doesn't exist
+        create_processed_folder()
         # Merge DataFrames on the student ID column (assuming it's named 'student_id')
         consolidated_df = merge_dataframes(base_df, admitidos_df)
         # Clean the consolidated DataFrame
         consolidated_df = clean_data(consolidated_df)
         # Save the consolidated DataFrame to an Excel file
-        consolidated_df.to_excel(os.path.join(DATA_FOLDER, CONSOLIDATED_FILE), index=False)
+        consolidated_df.to_excel(os.path.join(DATA_FOLDER, CONSOLIDATED_DIR, CONSOLIDATED_FILE), index=False)
     except Exception as e:
-        print(f'Error generating consolidated file: {e}')
+        log.error(f'Error generating consolidated file: {e}')
         return False
-    print('Consolidated file generated successfully.')
+    log.info('Consolidated file generated successfully.')
     return True
+
 
 # =============================================== AUXILIARY FUNCTIONS =================================================
 
@@ -56,7 +65,18 @@ def load_files() -> tuple:
     """
     base_df = pd.read_excel(os.path.join(DATA_FOLDER, BASE_FILE))
     admitidos_df = pd.read_excel(os.path.join(DATA_FOLDER, ADMITIDOS_FILE))
+    log.info('Files loaded successfully.')
     return base_df, admitidos_df
+
+
+def create_processed_folder() -> None:
+    """
+    Create the processed folder if it doesn't exist.
+    :return: None
+    """
+    os.makedirs(os.path.join(DATA_FOLDER, CONSOLIDATED_DIR), exist_ok=True)
+    log.info('Processed folder created.')
+
 
 def merge_dataframes(base_df: pd.DataFrame, admitidos_df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -77,7 +97,9 @@ def merge_dataframes(base_df: pd.DataFrame, admitidos_df: pd.DataFrame) -> pd.Da
     df['Cohorte Real'] = df['Cohorte Real'].apply(
         lambda x: f"{x.year}{'10' if x.month <= 6 else '20'}" if pd.notnull(x) else None)
 
+    log.info('Merging completed successfully.')
     return df
+
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -85,13 +107,41 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     :param df: DataFrame to clean.
     :return: Cleaned DataFrame.
     """
+    # Put all column names to lowercase and strip spaces
+    df.columns = df.columns.str.lower()
+
+    # Remove duplicates and rows with null values in critical columns
     df = df.drop_duplicates()
-    df = df[df['Cohorte Real'].notnull() & df['Puntaje criterio'].notnull()]
+    df = df[df['cohorte real'].notnull() & df['puntaje criterio'].notnull()]
+
+    # Remove codes from objetivo de aprendizaje and código y nombre del criterio
+    df['objetivo de aprendizaje'] = remove_codes(df['objetivo de aprendizaje'])
+    df['código y nombre del criterio'] = remove_codes(df['código y nombre del criterio'])
+
+    # Rename columns for clarity
+    df = df.rename(columns={'código y nombre del criterio': 'nombre del criterio'})
+    log.info(f'Column "código y nombre del criterio" renamed to "nombre del criterio"')
+
+    log.info('Data cleaning completed successfully.')
     return df
+
+
+def remove_codes(sr: pd.Series) -> pd.Series:
+    """
+    Remove codes from the beginning of the strings in the given Series.
+    :param sr: Series to process.
+    :return: Series with codes removed.
+    """
+    sr = sr.str.split(' ')
+    if sr.name == 'objetivo de aprendizaje':
+        sr = sr.apply(lambda x: ' '.join(x[1:]) if isinstance(x, list) else x)
+    elif sr.name == 'código y nombre del criterio':
+        sr = sr.apply(lambda x: ' '.join(x[2:]) if isinstance(x, list) else x)
+    log.info(f'Codes removed from column: {sr.name}')
+    return sr
+
 
 # ================================================ ENTRY POINT ========================================================
 
 if __name__ == '__main__':
     generate_consolidated_file()
-
-

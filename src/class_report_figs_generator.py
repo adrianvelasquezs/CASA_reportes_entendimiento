@@ -1,13 +1,17 @@
-# file_merger.py
+# class_report_figs_generator.py
 #
 # @author: Adrian Esteban Velasquez Solano
 # @date: 10-2025
 #
-# In collaboration with CASA
-# Universidad de los Andes, Bogotá D.C.
-# Colombia
+# In collaboration with CASA - Centro de Aseguramiento del Aprendizaje
+# Universidad de los Andes
+# Facultad de Administración
+# Bogotá D.C., Colombia
 #
-# Description:
+# Description: This script generates tables and graphs from a consolidated Excel file. It reads the consolidated
+# file located in the `data` folder and produces various tables and visualizations to aid in data analysis.
+# The generated tables and graphs are saved in the `reportes` folder, and are divided into courses.
+# Each course will have its own set of tables and graphs.
 
 # ================================================ IMPORTS ============================================================
 
@@ -20,8 +24,8 @@ import os
 # ================================================ CONSTANTS ==========================================================
 
 DATA_FOLDER = '../data'
-CONSOLIDATED_FILE = 'procesada/consolidated.xlsx'
-REPORTS_FOLDER = '../reportes'
+CONSOLIDATED_FILE = 'procesada/consolidado.xlsx'
+REPORTS_FOLDER = '../reportes/curso'
 
 # ================================================ MAIN FUNCTION ======================================================
 
@@ -44,14 +48,6 @@ def generate_tables_graphs() -> bool:
 
 def load_file() -> pd.DataFrame:
     return pd.read_excel( os.path.join(DATA_FOLDER, CONSOLIDATED_FILE) )
-
-def generate_table():
-    # TODO: Implement table generation logic
-    return -1
-
-def generate_graph():
-    # TODO: Implement graph generation logic
-    return -1
 
 # ================================================ ENTRY POINT ========================================================
 

@@ -1,0 +1,3 @@
+Leer atentamente el archivo "instrucciones.txt" en la carpeta "data".
+En windows, doble click al archivo llamado "reportes_windows.exe" para correr la aplicación
+En mac, doble click al archivo llamado "reportes_mac" para correr la aplicación

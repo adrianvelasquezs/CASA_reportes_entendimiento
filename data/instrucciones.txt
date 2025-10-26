@@ -1,0 +1,5 @@
+Poner los archivos en esta carpeta.
+El archivo Base de Datos debe llamarse "base.xlsx".
+El archivo de Admitidos debe llamarse "admitidos.xlsx".
+El archivo consolidado quedará guardado como "consolidado.xlsx" en la carpeta de datos procesados "data/procesada/".
+Los reportes quedarán guardados en la carpeta "data/reportes/".
