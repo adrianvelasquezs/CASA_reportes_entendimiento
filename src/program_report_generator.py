@@ -14,6 +14,7 @@
 # Each program will have its own set of tables and graphs.
 
 # ================================================ IMPORTS ============================================================
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -51,8 +52,8 @@ def generate_tables_graphs() -> bool:
             # Filter data for the program (convert to DataFrame for consistency)
             pdf = pd.DataFrame(consolidated_df[consolidated_df['programa'] == program])
             # Generate tables and graphs
-            generate_tables(pdf, program_folder, program)
             generate_graphs(pdf, program_folder, program)
+            generate_tables(pdf, program_folder, program)
         log.info('Tables and graphs generated successfully.')
         return True
     except FileNotFoundError as e:
@@ -203,25 +204,59 @@ def table_3(df: pd.DataFrame, folder_path: str, program: str):
     :return: None
     """
     try:
-        cols = df.columns
-        obj_col = next((c for c in cols if 'objetivo de aprendizaje' in c.lower()), None)
-        criterio_col = next((c for c in cols if
-                             'código y nombre del criterio' in c.lower() or 'codigo y nombre del criterio' in c.lower() or 'nombre del criterio' in c.lower()),
-                            None)
+        cols = list(df.columns)
+        obj_candidates = [c for c in cols if 'objetivo de aprendizaje' in c.lower()]
+        crit_candidates = [c for c in cols if ('código y nombre del criterio' in c.lower()) or (
+                    'codigo y nombre del criterio' in c.lower()) or ('nombre del criterio' in c.lower()) or (
+                                       'criterio' in c.lower())]
+        obj_col = obj_candidates[0] if obj_candidates else None
+        criterio_col = None
+        for c in crit_candidates:
+            if 'código y nombre del criterio' in c.lower() or 'codigo y nombre del criterio' in c.lower():
+                criterio_col = c; break
+        if criterio_col is None and crit_candidates:
+            criterio_col = crit_candidates[0]
+
         if obj_col is None or criterio_col is None:
             out_path = os.path.join(folder_path, f'{program}_tabla_3.xlsx')
             with pd.ExcelWriter(out_path) as xw:
                 df.head(50).to_excel(xw, index=False, sheet_name='Datos')
-            log.warning(f'Table 3 fallback written (column not found) for program: {program}')
+            log.warning(f'Table 3 fallback written (column not found) for program: {program} | obj_col={obj_col} criterio_col={criterio_col}')
             return
-        tmp = df[[obj_col, criterio_col]].dropna().drop_duplicates().astype({obj_col: str, criterio_col: str})
-        grouped = (tmp.groupby(obj_col)[criterio_col]
-                   .apply(lambda s: "".join(sorted(map(str, s))))
-                   .reset_index())
-        grouped['Número de criterios'] = grouped[criterio_col].apply(
-            lambda x: len([ln for ln in str(x).splitlines() if ln.strip()]))
-        out_df = grouped[[obj_col, 'Número de criterios', criterio_col]]
-        out_df.columns = ['Objetivos de aprendizaje', 'Número de criterios', 'Nombre del criterio']
+
+        # Mantener combinaciones únicas objetivo-criterio (para no duplicar criterios)
+        base = (df[[obj_col, criterio_col]]
+                .dropna()
+                .drop_duplicates()
+                .astype({obj_col: str, criterio_col: str}))
+
+        # Conteo de criterios por objetivo
+        counts = base.groupby(obj_col)[criterio_col].nunique().rename('__n')
+
+        # Expandir a "un criterio por fila"
+        long_df = base.copy()
+        long_df['__n'] = long_df[obj_col].map(counts)
+
+        # Orden opcional por objetivo y nombre de criterio
+        long_df = long_df.sort_values([obj_col, criterio_col]).reset_index(drop=True)
+
+        out_df = long_df.rename(columns={obj_col: 'Objetivos de aprendizaje', criterio_col: 'Nombre del criterio',
+                                         '__n': 'Número de criterios'})[
+            ['Objetivos de aprendizaje', 'Número de criterios', 'Nombre del criterio']
+        ]
+
+        # Dejar valores solo en la primera fila de cada objetivo; poner nulos en las siguientes
+        dup_mask = out_df['Objetivos de aprendizaje'].duplicated(keep='first')
+        out_df.loc[dup_mask, ['Objetivos de aprendizaje', 'Número de criterios']] = pd.NA
+
+        # Fila total (suma de únicos por objetivo)
+        total_criterios = int(counts.sum())
+        total_row = pd.DataFrame([
+            {'Objetivos de aprendizaje': 'Total criterios', 'Número de criterios': total_criterios,
+             'Nombre del criterio': ''}
+        ])
+        out_df = pd.concat([out_df, total_row], ignore_index=True)
+
         out_path = os.path.join(folder_path, f'{program}_tabla_3.xlsx')
         with pd.ExcelWriter(out_path) as xw:
             out_df.to_excel(xw, index=False, sheet_name='Tabla 3')
