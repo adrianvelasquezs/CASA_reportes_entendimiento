@@ -1,4 +1,4 @@
-# program_report_figs_generator.py
+# program_report_generator.py
 #
 # @author: Adrian Esteban Velasquez Solano
 # @date: 10-2025
@@ -23,14 +23,13 @@ import os
 
 import logger
 
-log = logger.Logger()
-
 # ================================================ CONSTANTS ==========================================================
 
 DATA_FOLDER = '../data/'
 CONSOLIDATED_FOLDER = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'
 REPORTS_FOLDER = 'reportes/programa/'
+log = logger.Logger()
 
 
 # ================================================ MAIN FUNCTION ======================================================
@@ -100,7 +99,6 @@ def create_report_folder(program: str) -> str:
 # ================================================ TABLE GENERATION ==================================================
 
 def generate_tables(pdf: pd.DataFrame, folder_path: str, program: str):
-    # TODO: Implement table generation logic
     df = pdf.drop(columns=['programa']).copy()
     log.info(f'Generating tables for program: {program}')
     table_1(df, folder_path, program)
@@ -209,14 +207,14 @@ def table_13(df: pd.DataFrame, folder_path: str, program: str):
     log.info(f'Table 13 generated for program: {program}')
 
 
+# ================================================ GRAPH GENERATION ==================================================
+
 def generate_graphs(pdf: pd.DataFrame, folder_path: str, program: str):
     # TODO: Implement graph generation logic
     df = pdf.drop(columns=['programa']).copy()
     graph_1(df, folder_path, program)
     graph_2(df, folder_path, program)
 
-
-# ================================================ GRAPH GENERATION ==================================================
 
 def graph_1(df: pd.DataFrame, folder_path: str, program: str):
     # TODO: Graph 1

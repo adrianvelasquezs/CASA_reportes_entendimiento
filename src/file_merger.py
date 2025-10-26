@@ -20,8 +20,6 @@ import pandas as pd
 import os
 import logger
 
-log = logger.Logger()
-
 # ================================================ CONSTANTS ==========================================================
 
 DATA_FOLDER = '../data/'  # Folder where the input files are located
@@ -29,6 +27,7 @@ BASE_FILE = 'base.xlsx'  # Name of the base file
 ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
 CONSOLIDATED_DIR = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'  # Path for the output consolidated file
+log = logger.Logger()
 
 
 # ================================================ MAIN FUNCTION ======================================================
