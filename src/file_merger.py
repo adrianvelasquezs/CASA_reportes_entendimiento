@@ -23,9 +23,10 @@ import logger
 # ================================================ CONSTANTS ==========================================================
 
 DATA_FOLDER = '../data/'  # Folder where the input files are located
+RAW_FOLDER = 'raw/'
 BASE_FILE = 'base.xlsx'  # Name of the base file
 ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
-CONSOLIDATED_DIR = 'procesada/'
+PROCESSED_DIR = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'  # Path for the output consolidated file
 log = logger.Logger()
 
@@ -47,7 +48,7 @@ def generate_consolidated_file() -> bool:
         # Clean the consolidated DataFrame
         consolidated_df = clean_data(consolidated_df)
         # Save the consolidated DataFrame to an Excel file
-        consolidated_df.to_excel(os.path.join(DATA_FOLDER, CONSOLIDATED_DIR, CONSOLIDATED_FILE), index=False)
+        consolidated_df.to_excel(os.path.join(DATA_FOLDER, PROCESSED_DIR, CONSOLIDATED_FILE), index=False)
     except Exception as e:
         log.error(f'Error generating consolidated file: {e}')
         return False
@@ -62,8 +63,8 @@ def load_files() -> tuple:
     Load the base and admitidos Excel files into DataFrames.
     :return: A tuple containing the base DataFrame and the admitidos DataFrame.
     """
-    base_df = pd.read_excel(os.path.join(DATA_FOLDER, BASE_FILE))
-    admitidos_df = pd.read_excel(os.path.join(DATA_FOLDER, ADMITIDOS_FILE))
+    base_df = pd.read_excel(os.path.join(DATA_FOLDER, RAW_FOLDER, BASE_FILE))
+    admitidos_df = pd.read_excel(os.path.join(DATA_FOLDER, RAW_FOLDER, ADMITIDOS_FILE))
     log.info('Files loaded successfully.')
     return base_df, admitidos_df
 
@@ -73,7 +74,7 @@ def create_processed_folder() -> None:
     Create the processed folder if it doesn't exist.
     :return: None
     """
-    os.makedirs(os.path.join(DATA_FOLDER, CONSOLIDATED_DIR), exist_ok=True)
+    os.makedirs(os.path.join(DATA_FOLDER, PROCESSED_DIR), exist_ok=True)
     log.info('Processed folder created.')
 
 

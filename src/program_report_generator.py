@@ -26,6 +26,7 @@ import logger
 # ================================================ CONSTANTS ==========================================================
 
 DATA_FOLDER = '../data/'
+RAW_FOLDER = 'raw/'
 CONSOLIDATED_FOLDER = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'
 REPORTS_FOLDER = 'reportes/programa/'
@@ -110,10 +111,6 @@ def generate_tables(pdf: pd.DataFrame, folder_path: str, program: str):
     table_7(df, folder_path, program)
     table_8(df, folder_path, program)
     table_9(df, folder_path, program)
-    table_10(df, folder_path, program)
-    table_11(df, folder_path, program)
-    table_12(df, folder_path, program)
-    table_13(df, folder_path, program)
 
 
 def table_1(df: pd.DataFrame, folder_path: str, program: str):
@@ -179,38 +176,9 @@ def table_9(df: pd.DataFrame, folder_path: str, program: str):
     log.info(f'Table 9 generated for program: {program}')
 
 
-def table_10(df: pd.DataFrame, folder_path: str, program: str):
-    # TODO: Table 10
-    table = df.describe()
-    table.to_excel(os.path.join(folder_path, f'{program}_tabla_10.xlsx'))
-    log.info(f'Table 10 generated for program: {program}')
-
-
-def table_11(df: pd.DataFrame, folder_path: str, program: str):
-    # TODO: Table 11
-    table = df.describe()
-    table.to_excel(os.path.join(folder_path, f'{program}_tabla_11.xlsx'))
-    log.info(f'Table 11 generated for program: {program}')
-
-
-def table_12(df: pd.DataFrame, folder_path: str, program: str):
-    # TODO: Table 12
-    table = df.describe()
-    table.to_excel(os.path.join(folder_path, f'{program}_tabla_12.xlsx'))
-    log.info(f'Table 12 generated for program: {program}')
-
-
-def table_13(df: pd.DataFrame, folder_path: str, program: str):
-    # TODO: Table 13
-    table = df.describe()
-    table.to_excel(os.path.join(folder_path, f'{program}_tabla_13.xlsx'))
-    log.info(f'Table 13 generated for program: {program}')
-
-
 # ================================================ GRAPH GENERATION ==================================================
 
 def generate_graphs(pdf: pd.DataFrame, folder_path: str, program: str):
-    # TODO: Implement graph generation logic
     df = pdf.drop(columns=['programa']).copy()
     graph_1(df, folder_path, program)
     graph_2(df, folder_path, program)

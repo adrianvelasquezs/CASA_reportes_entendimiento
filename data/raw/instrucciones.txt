@@ -1,0 +1,2 @@
+En esta carpeta van los archivos sin modificar
+"base.xlsx" y "admitidos.xlsx"
