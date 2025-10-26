@@ -97,6 +97,8 @@ def create_report_folder(program: str) -> str:
     return folder_path
 
 
+# ================================================ TABLE GENERATION ==================================================
+
 def generate_tables(pdf: pd.DataFrame, folder_path: str, program: str):
     # TODO: Implement table generation logic
     df = pdf.drop(columns=['programa']).copy()
@@ -213,6 +215,8 @@ def generate_graphs(pdf: pd.DataFrame, folder_path: str, program: str):
     graph_1(df, folder_path, program)
     graph_2(df, folder_path, program)
 
+
+# ================================================ GRAPH GENERATION ==================================================
 
 def graph_1(df: pd.DataFrame, folder_path: str, program: str):
     # TODO: Graph 1
