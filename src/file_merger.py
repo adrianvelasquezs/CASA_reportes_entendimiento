@@ -85,17 +85,32 @@ def merge_dataframes(base_df: pd.DataFrame, admitidos_df: pd.DataFrame) -> pd.Da
     :param admitidos_df: Admitidos DataFrame.
     :return: Merged DataFrame.
     """
+    adm = admitidos_df[['CODIGO', 'PERIODO']].copy()
+
+    def to_str_period(x):
+        if pd.isna(x):
+            return None
+        if isinstance(x, (int, float)) and not isinstance(x, bool):
+            try:
+                return str(int(x))
+            except Exception:
+                return str(x)
+        return str(x)
+
+    def last_digit_to_zero(s):
+        if s is None:
+            return None
+        s = s.strip()
+        return s[:-1] + '0' if len(s) >= 1 else '0'
+
+    adm['PERIODO'] = adm['PERIODO'].apply(to_str_period).apply(last_digit_to_zero).astype("int64")
+
     df = base_df.merge(
-        admitidos_df[['CODIGO', 'Fecha inicio de clases']],
+        adm,
         left_on='Código del estudiante',
         right_on='CODIGO',
         how='left'
-    ).rename(columns={'Fecha inicio de clases': 'Cohorte Real'}).drop(columns=['CODIGO'])
-
-    df['Cohorte Real'] = pd.to_datetime(df['Cohorte Real'], errors='coerce')
-
-    df['Cohorte Real'] = df['Cohorte Real'].apply(
-        lambda x: f"{x.year}{'10' if x.month <= 6 else '20'}" if pd.notnull(x) else None)
+    ).rename(columns={'PERIODO': 'Cohorte Real'}).drop(columns=['CODIGO'])
 
     log.info('Merging completed successfully.')
     return df
@@ -122,6 +137,8 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns={'código y nombre del criterio': 'nombre del criterio'})
     log.info(f'Column "código y nombre del criterio" renamed to "nombre del criterio"')
 
+    # Check validity of competencia column
+
     log.info('Data cleaning completed successfully.')
     return df
 
@@ -132,13 +149,24 @@ def remove_codes(sr: pd.Series) -> pd.Series:
     :param sr: Series to process.
     :return: Series with codes removed.
     """
-    sr = sr.str.split(' ')
     if sr.name == 'objetivo de aprendizaje':
-        sr = sr.apply(lambda x: ' '.join(x[1:]) if isinstance(x, list) else x)
+        sr = sr.str.split(' ')
+        # Remove the first token only when the first token contains a '-'
+        sr = sr.apply(
+            lambda x: ' '.join(x[1:]) if isinstance(x, list) and x and '-' in str(x[0]) else (
+                ' '.join(x) if isinstance(x, list) else x)
+        )
     elif sr.name == 'código y nombre del criterio':
-        sr = sr.apply(lambda x: ' '.join(x[2:]) if isinstance(x, list) else x)
+        sr = sr.str.split('|')
+        if len(sr) > 0:
+            sr = sr.apply(lambda x: ' '.join(x[1:]) if isinstance(x, list) else x)
     log.info(f'Codes removed from column: {sr.name}')
     return sr
+
+
+def check_competencia_validity(df: pd.DataFrame) -> None:
+    # TODO: Implement validity checks for the 'competencia' column
+    pass
 
 
 # ================================================ ENTRY POINT ========================================================

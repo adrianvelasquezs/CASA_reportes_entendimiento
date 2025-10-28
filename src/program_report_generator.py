@@ -27,6 +27,7 @@ import logger
 
 DATA_FOLDER = '../data/'
 RAW_FOLDER = 'raw/'
+ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
 CONSOLIDATED_FOLDER = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'
 REPORTS_FOLDER = 'reportes/programa/'
@@ -51,6 +52,8 @@ def generate_tables_graphs() -> bool:
             program_folder = create_report_folder(program)
             # Filter data for the program (convert to DataFrame for consistency)
             pdf = pd.DataFrame(consolidated_df[consolidated_df['programa'] == program])
+            # Check valid students in the program
+            pdf = check_students(pdf)
             # Generate tables and graphs
             generate_graphs(pdf, program_folder, program)
             generate_tables(pdf, program_folder, program)
@@ -97,6 +100,12 @@ def create_report_folder(program: str) -> str:
         log.info(f'Creating report folder: {folder}')
         os.makedirs(folder, exist_ok=True)
     return folder
+
+def check_students(pdf: pd.DataFrame) -> pd.DataFrame:
+    admitidos = pd.read_excel(os.path.join(RAW_FOLDER, ADMITIDOS_FILE))
+    # TODO: check if there are students who are not in the program's admitidos list
+    return pdf
+
 
 
 # ================================================ TABLE GENERATION ===================================================
@@ -207,13 +216,14 @@ def table_3(df: pd.DataFrame, folder_path: str, program: str):
         cols = list(df.columns)
         obj_candidates = [c for c in cols if 'objetivo de aprendizaje' in c.lower()]
         crit_candidates = [c for c in cols if ('código y nombre del criterio' in c.lower()) or (
-                    'codigo y nombre del criterio' in c.lower()) or ('nombre del criterio' in c.lower()) or (
-                                       'criterio' in c.lower())]
+                'codigo y nombre del criterio' in c.lower()) or ('nombre del criterio' in c.lower()) or (
+                                   'criterio' in c.lower())]
         obj_col = obj_candidates[0] if obj_candidates else None
         criterio_col = None
         for c in crit_candidates:
             if 'código y nombre del criterio' in c.lower() or 'codigo y nombre del criterio' in c.lower():
-                criterio_col = c; break
+                criterio_col = c;
+                break
         if criterio_col is None and crit_candidates:
             criterio_col = crit_candidates[0]
 
@@ -221,7 +231,8 @@ def table_3(df: pd.DataFrame, folder_path: str, program: str):
             out_path = os.path.join(folder_path, f'{program}_tabla_3.xlsx')
             with pd.ExcelWriter(out_path) as xw:
                 df.head(50).to_excel(xw, index=False, sheet_name='Datos')
-            log.warning(f'Table 3 fallback written (column not found) for program: {program} | obj_col={obj_col} criterio_col={criterio_col}')
+            log.warning(
+                f'Table 3 fallback written (column not found) for program: {program} | obj_col={obj_col} criterio_col={criterio_col}')
             return
 
         # Mantener combinaciones únicas objetivo-criterio (para no duplicar criterios)
