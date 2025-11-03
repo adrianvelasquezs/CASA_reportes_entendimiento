@@ -102,7 +102,7 @@ def create_report_folder(program: str) -> str:
     return folder
 
 def check_students(pdf: pd.DataFrame) -> pd.DataFrame:
-    admitidos = pd.read_excel(os.path.join(RAW_FOLDER, ADMITIDOS_FILE))
+    admitidos = pd.read_excel(os.path.join(DATA_FOLDER, RAW_FOLDER, ADMITIDOS_FILE))
     # TODO: check if there are students who are not in the program's admitidos list
     return pdf
 
