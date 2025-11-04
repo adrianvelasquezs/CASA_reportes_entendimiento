@@ -20,15 +20,23 @@ import pandas as pd
 import os
 import logger
 
+try:
+    import path_config as paths
+except ImportError:
+    print("ERROR: No se pudo encontrar path_config.py")
+    # Definir rutas de fallback por si acaso (aunque fallará)
+    paths = type('obj', (object,), {
+        'DATA_FOLDER': '../data/',
+        'RAW_FOLDER': '../data/raw/',
+        'BASE_FILE': '../data/raw/base.xlsx',
+        'ADMITIDOS_FILE': '../data/raw/admitidos.xlsx',
+        'PROCESSED_DIR': '../data/procesada/',
+        'CONSOLIDATED_FILE': '../data/procesada/base_consolidada.xlsx',
+        'STUDENT_MAP_FILE': '../data/procesada/student_program_map.csv'
+    })()
+
 # ================================================ CONSTANTS ==========================================================
 
-DATA_FOLDER = '../data/'  # Folder where the input files are located
-RAW_FOLDER = 'raw/'
-BASE_FILE = 'base.xlsx'  # Name of the base file
-ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
-PROCESSED_DIR = 'procesada/'
-CONSOLIDATED_FILE = 'base_consolidada.xlsx'  # Path for the output consolidated file
-STUDENT_MAP_FILE = 'student_program_map.csv'
 log = logger.Logger()
 
 
@@ -51,7 +59,7 @@ def generate_consolidated_file() -> bool:
         # Clean the consolidated DataFrame
         consolidated_df = clean_data(consolidated_df)
         # Save the consolidated DataFrame to an Excel file
-        consolidated_df.to_excel(os.path.join(DATA_FOLDER, PROCESSED_DIR, CONSOLIDATED_FILE), index=False)
+        consolidated_df.to_excel(paths.CONSOLIDATED_FILE, index=False)
     except Exception as e:
         log.error(f'Error generating consolidated file: {e}')
         return False
@@ -66,8 +74,8 @@ def load_files() -> tuple:
     Load the base and admitidos Excel files into DataFrames.
     :return: A tuple containing the base DataFrame and the admitidos DataFrame.
     """
-    base_df = pd.read_excel(os.path.join(DATA_FOLDER, RAW_FOLDER, BASE_FILE))
-    admitidos_df = pd.read_excel(os.path.join(DATA_FOLDER, RAW_FOLDER, ADMITIDOS_FILE))
+    base_df = pd.read_excel(paths.BASE_FILE)
+    admitidos_df = pd.read_excel(paths.ADMITIDOS_FILE)
     log.info('Files loaded successfully.')
     return base_df, admitidos_df
 
@@ -77,7 +85,7 @@ def create_processed_folder() -> None:
     Create the processed folder if it doesn't exist.
     :return: None
     """
-    os.makedirs(os.path.join(DATA_FOLDER, PROCESSED_DIR), exist_ok=True)
+    os.makedirs(paths.PROCESSED_DIR, exist_ok=True)
     log.info('Processed folder created.')
 
 
@@ -231,7 +239,7 @@ def create_student_program_map(admitidos_df: pd.DataFrame) -> None:
             if p not in program_mapping and pd.notna(p)
         }
         if unmapped_programs:
-            log.warning(f"Unmapped programs found in '{ADMITIDOS_FILE}': "
+            log.warning(f"Unmapped programs found in '{paths.ADMITIDOS_FILE}': "
                         f"{unmapped_programs}. These will be 'NaN' in the map.")
 
         # Ensure student codes are strings to match 'base.xlsx'
@@ -244,7 +252,7 @@ def create_student_program_map(admitidos_df: pd.DataFrame) -> None:
         student_map_df = student_map_df.dropna(subset=['programa'])
 
         # Define the output path
-        output_path = os.path.join(DATA_FOLDER, PROCESSED_DIR, 'student_program_map.csv')
+        output_path = paths.STUDENT_MAP_FILE
 
         # Save the map to the processed folder
         student_map_df.to_csv(output_path, index=False)

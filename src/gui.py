@@ -15,6 +15,12 @@ import sys
 import os
 
 # --- IMPORTANTE ---
+# Importa la configuración de rutas PRIMERO
+try:
+    import path_config as paths
+except ImportError:
+    print("ERROR CRÍTICO: No se pudo encontrar path_config.py")
+    # Este error debe mostrarse en la GUI si es posible
 # Estos son los scripts de tu proyecto.
 # Asumimos que 'gui.py' está en la misma carpeta 'src/'
 try:
@@ -119,7 +125,8 @@ class App:
 
         print("Interfaz iniciada. Listo para comenzar.")
         print(f"Directorio de trabajo actual: {os.getcwd()}")
-        print("Asegúrese de que esta ruta sea la carpeta 'src/' del proyecto.\n")
+        print(f"Raíz del proyecto (PROJECT_ROOT): {paths.PROJECT_ROOT}")
+        print(f"Buscando datos en: {paths.DATA_FOLDER}\n")
 
     def clear_log(self):
         """Limpia el área de la consola."""

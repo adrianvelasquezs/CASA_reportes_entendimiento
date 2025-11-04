@@ -20,18 +20,25 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import os
-
 import logger
+
+try:
+    import path_config as paths
+except ImportError:
+    print("ERROR: No se pudo encontrar path_config.py")
+    # Definir rutas de fallback por si acaso (aunque fallará)
+    paths = type('obj', (object,), {
+        'DATA_FOLDER': '../data/',
+        'RAW_FOLDER': '../data/raw/',
+        'BASE_FILE': '../data/raw/base.xlsx',
+        'ADMITIDOS_FILE': '../data/raw/admitidos.xlsx',
+        'PROCESSED_DIR': '../data/procesada/',
+        'CONSOLIDATED_FILE': '../data/procesada/base_consolidada.xlsx',
+        'STUDENT_MAP_FILE': '../data/procesada/student_program_map.csv'
+    })()
 
 # ================================================ CONSTANTS ==========================================================
 
-DATA_FOLDER = '../data/'
-RAW_FOLDER = 'raw/'
-ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
-CONSOLIDATED_FOLDER = 'procesada/'
-CONSOLIDATED_FILE = 'base_consolidada.xlsx'
-REPORTS_FOLDER = 'reportes/programa/'
-STUDENT_MAP_FILE = 'student_program_map.csv'
 log = logger.Logger()
 
 
@@ -48,11 +55,11 @@ def generate_tables_graphs() -> bool:
 
         # Load the student-program map ONCE
         try:
-            map_path = os.path.join(DATA_FOLDER, CONSOLIDATED_FOLDER, STUDENT_MAP_FILE)
+            map_path = paths.STUDENT_MAP_FILE
             student_map_df = pd.read_csv(map_path)
             log.info(f"Successfully loaded student-program map from {map_path}")
         except FileNotFoundError:
-            log.error(f"FATAL: Student map file not found: {STUDENT_MAP_FILE}.")
+            log.error(f"FATAL: Student map file not found: {map_path}.")
             log.error("Please run 'file_merger.py' first to generate the map.")
             return False  # Stop execution if map is missing
 
@@ -96,7 +103,7 @@ def load_file() -> pd.DataFrame:
     :return: A DataFrame containing the consolidated data.
     """
     log.info('Loading consolidated file...')
-    return pd.read_excel(os.path.join(DATA_FOLDER, CONSOLIDATED_FOLDER, CONSOLIDATED_FILE))
+    return pd.read_excel(paths.CONSOLIDATED_FILE)
 
 
 def get_programs(df: pd.DataFrame) -> list:
@@ -116,7 +123,7 @@ def create_report_folder(program: str) -> str:
     :param program: The program name.
     :return: The path to the program's report folder.
     """
-    folder = os.path.join(DATA_FOLDER, REPORTS_FOLDER, program)
+    folder = os.path.join(paths.REPORTS_FOLDER, program)
     if not os.path.exists(folder):
         log.info(f'Creating report folder: {folder}')
         os.makedirs(folder, exist_ok=True)

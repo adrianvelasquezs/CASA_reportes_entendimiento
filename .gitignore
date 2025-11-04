@@ -7,3 +7,9 @@
 *.png
 *.jpg
 *.jpeg
+/src/build
+/src/dist
+*.spec
+*.exe
+*.app
+ReportesCASA
