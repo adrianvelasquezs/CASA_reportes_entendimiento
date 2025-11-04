@@ -31,6 +31,7 @@ ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
 CONSOLIDATED_FOLDER = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'
 REPORTS_FOLDER = 'reportes/programa/'
+STUDENT_MAP_FILE = 'student_program_map.csv'
 log = logger.Logger()
 
 
@@ -44,19 +45,39 @@ def generate_tables_graphs() -> bool:
     try:
         # Load consolidated file
         consolidated_df = load_file()
+
+        # Load the student-program map ONCE
+        try:
+            map_path = os.path.join(DATA_FOLDER, CONSOLIDATED_FOLDER, STUDENT_MAP_FILE)
+            student_map_df = pd.read_csv(map_path)
+            log.info(f"Successfully loaded student-program map from {map_path}")
+        except FileNotFoundError:
+            log.error(f"FATAL: Student map file not found: {STUDENT_MAP_FILE}.")
+            log.error("Please run 'file_merger.py' first to generate the map.")
+            return False  # Stop execution if map is missing
+
         # Get unique programs
         programs = get_programs(consolidated_df)
+
         # Generate tables and graphs for each program
         for program in programs:
             # Create report folder for the program
             program_folder = create_report_folder(program)
             # Filter data for the program (convert to DataFrame for consistency)
             pdf = pd.DataFrame(consolidated_df[consolidated_df['programa'] == program])
-            # Check valid students in the program
-            pdf = check_students(pdf)
+
+            # Check valid students in the program using the loaded map
+            # pdf = check_students(pdf, student_map_df)
+
+            # If all students were filtered out, skip this program
+            if pdf.empty:
+                log.warning(f"No valid student data for program '{program}' after validation. Skipping.")
+                continue
+
             # Generate tables and graphs
             generate_graphs(pdf, program_folder, program)
             generate_tables(pdf, program_folder, program)
+
         log.info('Tables and graphs generated successfully.')
         return True
     except FileNotFoundError as e:
@@ -101,11 +122,57 @@ def create_report_folder(program: str) -> str:
         os.makedirs(folder, exist_ok=True)
     return folder
 
-def check_students(pdf: pd.DataFrame) -> pd.DataFrame:
-    admitidos = pd.read_excel(os.path.join(DATA_FOLDER, RAW_FOLDER, ADMITIDOS_FILE))
-    # TODO: check if there are students who are not in the program's admitidos list
-    return pdf
 
+def check_students(pdf: pd.DataFrame, student_map: pd.DataFrame) -> pd.DataFrame:
+    """
+    Filters the program DataFrame to include only students who are
+    officially admitted to that program, using the pre-loaded student map.
+    :param pdf: The DataFrame for a single program.
+    :param student_map: The DataFrame from 'student_program_map.csv'.
+    :return: A filtered DataFrame.
+    """
+    if pdf.empty:
+        log.info("Student check skipped: DataFrame is empty.")
+        return pdf
+
+    try:
+        # Get the target program from the already-filtered DataFrame
+        target_program = pdf['programa'].iloc[0]
+
+        # Get the list of all student codes *officially* in this program
+        # Ensure 'código del estudiante' is string for comparison
+        student_map_clean = student_map.copy()
+        student_map_clean['código del estudiante'] = student_map_clean['código del estudiante'].astype(str)
+
+        valid_students = student_map_clean[
+            student_map_clean['programa'] == target_program
+            ]['código del estudiante']
+
+        # Ensure the DataFrame's student code is also a string for comparison
+        pdf_clean = pdf.copy()
+        pdf_clean['código del estudiante'] = pdf_clean['código del estudiante'].astype(str)
+
+        # Filter the DataFrame to only include students in the valid list
+        original_count = len(pdf_clean)
+        valid_pdf = pdf_clean[
+            pdf_clean['código del estudiante'].isin(valid_students)
+        ]
+        final_count = len(valid_pdf)
+
+        if original_count != final_count:
+            dropped_count = original_count - final_count
+            log.warning(f"Program '{target_program}': "
+                        f"Removed {dropped_count} records for students "
+                        f"not found in the program map.")
+        else:
+            log.info(f"Program '{target_program}': "
+                     f"All {original_count} records validated against program map.")
+
+        return valid_pdf
+
+    except Exception as e:
+        log.error(f"Error during student validation for program '{target_program}': {e}")
+        return pdf  # Return original df on unexpected error
 
 
 # ================================================ TABLE GENERATION ===================================================

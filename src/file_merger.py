@@ -28,6 +28,7 @@ BASE_FILE = 'base.xlsx'  # Name of the base file
 ADMITIDOS_FILE = 'admitidos.xlsx'  # Name of the admitidos file
 PROCESSED_DIR = 'procesada/'
 CONSOLIDATED_FILE = 'base_consolidada.xlsx'  # Path for the output consolidated file
+STUDENT_MAP_FILE = 'student_program_map.csv'
 log = logger.Logger()
 
 
@@ -43,6 +44,8 @@ def generate_consolidated_file() -> bool:
         base_df, admitidos_df = load_files()
         # Create processed folder if it doesn't exist
         create_processed_folder()
+        # Create the student-program map for the report generator
+        create_student_program_map(admitidos_df)
         # Merge DataFrames on the student ID column
         consolidated_df = merge_dataframes(base_df, admitidos_df)
         # Clean the consolidated DataFrame
@@ -137,7 +140,10 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns={'código y nombre del criterio': 'nombre del criterio'})
     log.info(f'Column "código y nombre del criterio" renamed to "nombre del criterio"')
 
+    # Standardize competencia column values
+    df['competencia'] = df['competencia'].apply(lambda x: x.strip().upper() if isinstance(x, str) else x)
     # Check validity of competencia column
+    check_competencia_validity(df)
 
     log.info('Data cleaning completed successfully.')
     return df
@@ -165,8 +171,87 @@ def remove_codes(sr: pd.Series) -> pd.Series:
 
 
 def check_competencia_validity(df: pd.DataFrame) -> None:
-    # TODO: Implement validity checks for the 'competencia' column
-    pass
+    """
+    Checks the validity of the 'competencia' column values and logs warnings.
+    :param df: DataFrame to check (must have 'competencia' column).
+    :return: None
+    """
+    # NOTE: Adjust this set with all valid 'Competencia' codes for your project.
+    # I am using the codes seen in the 'base.xlsx' snippet ('CO', 'PC', 'TD')
+    # and from the 'Diccionario' ('ET', 'CO-E', 'CO-O').
+    valid_competencias = {'ET', 'CO-E', 'CO-O', 'PC', 'TD', 'CO', 'IT', 'LI', 'AI', 'TE', 'PG'}
+
+    # Find unique values in the 'competencia' column that are not in the valid set
+    actual_competencias = set(df['competencia'].dropna().astype(str).str.strip().str.upper().unique())
+    invalid_competencias = actual_competencias - valid_competencias
+
+    if invalid_competencias:
+        log.warning(f"Found unexpected 'competencia' values: {invalid_competencias}")
+    else:
+        log.info("All 'competencia' values appear valid.")
+
+
+def create_student_program_map(admitidos_df: pd.DataFrame) -> None:
+    """
+    Creates and saves a simple map of student codes to their admitted program.
+    It also standardizes the program names based on the provided mapping.
+    :param admitidos_df: The DataFrame loaded from 'admitidos.xlsx'.
+    :return: None
+    """
+    try:
+        log.info('Creating student-program map...')
+
+        # Define the program mapping based on the provided table
+        # 'Código de programas según Banner' -> 'Otras siglas utilizadas'
+        program_mapping = {
+            'E-AFIN': 'AFIN',
+            'E-IMER': 'IMER',
+            'M-MERC': 'MMER',  # Using MMER as it appears in base.xlsx
+            'M-FINZ': 'MFIN',  # Using MFIN as it is more specific
+            'M-GAMB': 'MGA',
+            'M-MGPD': 'MDP',
+            'M-GSUM': 'MSCM',
+            'M-MBAV': 'MBAOnline',
+            'M-MBAE': 'EMBA',
+            'M-MMBA': 'MBATP',  # This matches 'MBATP' in base.xlsx
+            'M-GEST': 'MGEST'
+        }
+
+        # Select, rename, and clean columns
+        student_map_df = admitidos_df[['CODIGO', 'PROGRAMA']].copy()
+        student_map_df.columns = ['código del estudiante', 'programa']
+
+        # Apply the mapping
+        original_programs = set(student_map_df['programa'].unique())
+        student_map_df['programa'] = student_map_df['programa'].map(program_mapping)
+
+        # Log any programs that were not in the mapping
+        unmapped_programs = {
+            p for p in original_programs
+            if p not in program_mapping and pd.notna(p)
+        }
+        if unmapped_programs:
+            log.warning(f"Unmapped programs found in '{ADMITIDOS_FILE}': "
+                        f"{unmapped_programs}. These will be 'NaN' in the map.")
+
+        # Ensure student codes are strings to match 'base.xlsx'
+        student_map_df['código del estudiante'] = student_map_df['código del estudiante'].astype(str)
+
+        # Remove any duplicates to create a clean 1-to-1 map (student-to-program)
+        student_map_df = student_map_df.drop_duplicates(subset=['código del estudiante'])
+
+        # Drop any rows where the program could not be mapped (became NaN)
+        student_map_df = student_map_df.dropna(subset=['programa'])
+
+        # Define the output path
+        output_path = os.path.join(DATA_FOLDER, PROCESSED_DIR, 'student_program_map.csv')
+
+        # Save the map to the processed folder
+        student_map_df.to_csv(output_path, index=False)
+        log.info(f'Student-program map saved to {output_path}')
+
+    except Exception as e:
+        log.error(f'Error creating student-program map: {e}')
 
 
 # ================================================ ENTRY POINT ========================================================
