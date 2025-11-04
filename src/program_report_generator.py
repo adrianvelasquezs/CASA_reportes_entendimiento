@@ -66,7 +66,7 @@ def generate_tables_graphs() -> bool:
             # Filter data for the program (convert to DataFrame for consistency)
             pdf = pd.DataFrame(consolidated_df[consolidated_df['programa'] == program])
 
-            # Check valid students in the program using the loaded map
+            # TODO: Check valid students in the program using the loaded map
             # pdf = check_students(pdf, student_map_df)
 
             # If all students were filtered out, skip this program
